@@ -17,10 +17,26 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    /**
+     * Creates the controller with the service responsible for placing orders.
+     *
+     * @param orderService order processing service
+     */
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
+    /**
+     * Handles an order submission and returns the created order with HTTP 201.
+     * Spring validates the request body before invoking this method.
+     *
+     * @param request validated product, quantity, and price details
+     * @return the persisted order details
+     * @throws com.javacodeex.order.exception.InsufficientStockException if the product
+     *         does not exist or its stock is insufficient
+     * @throws com.javacodeex.order.exception.InventoryServiceUnavailableException
+     *         if the inventory check cannot be completed
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse placeOrder(@Valid @RequestBody OrderRequest request) {

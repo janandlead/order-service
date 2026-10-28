@@ -11,6 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(name = "inventory-service", url = "${inventory.service.url}") // http://localhost:8082
 public interface InventoryClient {
 
+    /**
+     * Checks whether inventory can satisfy the requested product quantity.
+     *
+     * @param productCode code identifying the product to check
+     * @param quantity requested number of units
+     * @return the product's inventory details and availability for the requested quantity
+     * @throws feign.FeignException if the inventory request fails
+     */
     @GetMapping("/api/inventory/{productCode}")
     InventoryResponse checkStock(
             @PathVariable("productCode") String productCode,

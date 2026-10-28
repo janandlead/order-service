@@ -25,11 +25,28 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
 
+    /**
+     * Creates the service with order persistence and inventory lookup dependencies.
+     *
+     * @param orderRepository repository used to save orders
+     * @param inventoryClient client used to check product availability
+     */
     public OrderService(OrderRepository orderRepository, InventoryClient inventoryClient) {
         this.orderRepository = orderRepository;
         this.inventoryClient = inventoryClient;
     }
 
+    /**
+     * Checks inventory and persists a confirmed order when sufficient stock is available.
+     * The inventory check does not reserve or deduct stock. Calls through the Spring
+     * proxy use the configured inventory retry and circuit-breaker policies.
+     *
+     * @param request product, quantity, and price details for the order
+     * @return the saved order's identifier, details, status, and creation time
+     * @throws InsufficientStockException if the product is missing or stock is insufficient
+     * @throws InventoryServiceUnavailableException if inventory is unavailable or
+     *         the circuit-breaker fallback handles a failure
+     */
     @Retry(name = "inventory-service")
     @CircuitBreaker(name = "inventory-service", fallbackMethod = "inventoryFallback")
     public OrderResponse placeOrder(OrderRequest request) {
@@ -65,6 +82,12 @@ public class OrderService {
         return toResponse(savedOrder);
     }
 
+    /**
+     * Maps a persisted order to its API response representation.
+     *
+     * @param order order whose fields will be copied
+     * @return a response containing the order's stored details
+     */
     private OrderResponse toResponse(Order order) {
         return new OrderResponse(
                 order.getId(),
@@ -76,6 +99,16 @@ public class OrderService {
         );
     }
 
+    /**
+     * Logs a circuit-breaker fallback and propagates an inventory-unavailable error.
+     * An existing inventory-unavailable exception is preserved; other failures are
+     * wrapped with their original cause.
+     *
+     * @param request order request associated with the failed call
+     * @param throwable failure that triggered the fallback
+     * @return never returns normally; the type matches the protected method
+     * @throws InventoryServiceUnavailableException always, to report the failed check
+     */
     private OrderResponse inventoryFallback(OrderRequest request, Throwable throwable) {
         log.error("Inventory fallback invoked for productCode={} after retries/circuit-breaker rejection: {}",
                 request.productCode(), throwable.toString());

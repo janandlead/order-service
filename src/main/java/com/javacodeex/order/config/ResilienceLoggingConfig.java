@@ -17,12 +17,22 @@ public class ResilienceLoggingConfig {
     private final RetryRegistry retryRegistry;
     private final CircuitBreakerRegistry circuitBreakerRegistry;
 
+    /**
+     * Creates the configuration with the application's resilience registries.
+     *
+     * @param retryRegistry registry containing the inventory retry instance
+     * @param circuitBreakerRegistry registry containing the inventory circuit breaker
+     */
     public ResilienceLoggingConfig(RetryRegistry retryRegistry,
                                    CircuitBreakerRegistry circuitBreakerRegistry) {
         this.retryRegistry = retryRegistry;
         this.circuitBreakerRegistry = circuitBreakerRegistry;
     }
 
+    /**
+     * Registers startup listeners that log inventory retries, retry outcomes,
+     * circuit-breaker state transitions, and rejected calls.
+     */
     @PostConstruct
     void registerEventLogging() {
         Retry retry = retryRegistry.retry("inventory-service");
